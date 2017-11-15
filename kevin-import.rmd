@@ -1,0 +1,18 @@
+data	=	read_csv("C:/Users/Kevin/Downloads/studentMat (2).csv")
+
+math_df	<- read_csv("C:/Users/Kevin/Downloads/studentMat (2).csv",
+  col_types =	cols(
+    sex =	col_string(),
+    age	=	col_number(),
+    m_job =	col_string(),
+    f_job =	col_string(),
+    guardian =	col_string(),
+    traveltime = col_number(),
+    studytime = col_number()
+    failures = col_integer(),
+    higher = col_boolean(),
+    internet = col_boolean(),
+    romantic = col_boolean(),
+    freetime = col_integer(),
+    absences = col_integer()
+))
