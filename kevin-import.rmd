@@ -8,4 +8,11 @@ data	<-	read_csv("C:/Users/Kevin Chiu/Desktop/Data Vis/cs329e-project-4/NCHS_Lea
     State =	col_string(),
     Deaths =	col_integer(),
     Age-adjusted Death Rate = col_number()
-))
+)) %>% dplyr::select(1:7) %>% dplyr::filter(State != 'United States' and Deaths != null)
+
+names(data)
+
+for(n in names(data)) {
+  df[n] <- data.frame(lapply(df[n], gsub, pattern="[^ -~]", replacement= ""))
+}
+write_csv(df, "/Users/pcannata/Downloads/new_cause_of_death.csv")
