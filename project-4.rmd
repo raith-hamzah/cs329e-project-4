@@ -1,4 +1,82 @@
+---
+title: "Project 4 (Group #14)"
+author: "Raith Hamzah, Adarsh Ramakrishnan, Jordan Alexander, Kevin Chiu"
+output:
+  html_notebook:
+    code_folding: hide
+    toc: true
+    toc_depth: 4
+    toc_float: true
+runtime: shiny
+---
+# Project 4 (Group 14):
 ```{r}
+# Load required libraries
+library(data.world)
 library(tidyverse)
+library(dplyr)
+library(shiny)
+library(ggplot2)
+
+# Step 1: Input
+data	<- read_csv("./NCHS_Leading_Causes_of_Death__United_States.csv",
+# Step 2: Clean
+  col_types = cols(
+     Year = col_integer(),
+     N_Cause_Name = col_character(),
+     Cause_Name = col_character(),
+     State = col_character(),
+     Deaths = col_integer(),
+     Age_adjusted_Death_Rate = col_number())) %>% 
+  dplyr::select(1:6) %>% 
+  dplyr::filter(State != 'United States'& Deaths != "")
+
+names(data)
+
+for(n in names(data)) {
+  data[n] <- data.frame(lapply(data[n], gsub, pattern="[^ -~]", replacement= ""))
+}
+
+# Step 3: Export
+write_csv(data, "./new_cause_of_death.csv")
+
+# Step 4: Load (data.world)
+project <- "https://data.world/jalex11/f-17-edv-project-4"
+data.world::set_config(cfg_env("DW_API"))
+death_educ <- data.world::query(
+  data.world::qry_sql("select b14001_001, n.state, n_cause_name, year, deaths from new_cause_of_death n join usa_all_states u on n.state = u.areaname;"),
+  dataset = project)
+
 
 ```
+
+## Adarsh's Graph
+```{r}
+# Step 6: Understand (Transform, Vizualize, Model)
+
+death_educ %>% dplyr::group_by(n_cause_name) %>%
+  dplyr::summarise(deaths=mean(deaths)) %>%
+  dplyr::mutate(rank_deaths= percent_rank(deaths)) %>%
+  dplyr::filter(rank_deaths>=0.6 & n_cause_name!= "All Causes") %>%
+  ggplot(mapping=aes(x=n_cause_name,y=deaths))+geom_bar(stat="identity")
+
+```
+
+The data was grouped by cause of death and then a percent rank was created for the deaths in each cause. This allowed me to filter out the top 40 percent of the deaths. The reason for this is to remove any causes of death that do no have a significant enough contribution (that is they don't have enough deaths to be of significance in the study). It can be seen that heart diseases are the most common causes of deaths followed by malignant neoplasms. This makes sense because of how common heart diseases are in the population and how severe a malignant neoplasm can be to the body when present/ One interesting thing was how low accidents are as a cause of death compared to heart diseases and even compared to cerebrovascular diseases. This could be due to an increase in safety and regulations in the roads and a reduction in drunk driving as well.
+
+## Jordan's Graph
+
+```{r}
+# Step 6: Understand (Transform, Vizualize, Model)
+
+x <- death_educ %>% dplyr::select(state, n_cause_name, year, deaths) %>%
+  dplyr::mutate(cd_deaths= cume_dist(deaths)) %>%
+  dplyr::filter(cd_deaths >= 0.6 & n_cause_name != "All Causes")
+  
+x %>% ggplot(mapping = aes(x = n_cause_name, y = cd_deaths, color = year)) + geom_bar(stat = "identity") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+
+```
+
+Here I selected the columns state, n_cause_name, year and deaths from the data frame death_educ. I then made a new column in the data frame called "cd_deaths". I used the cume_dist() function on the column "death" to compute this column. The cume_dist() of "death" is the number of rows with values lower than or equal to the value of "death", divided by the number of rows evaluated in the particular query result. I then filtered the row by the values greater than or equal to 0.6 because minimum of the column was .6 I also filtered n_cause_name to not include "All Causes" as it is redudant and would alter the results. I then began my visualization by making a barchart with n_cause_names being the bars, and cd_deaths on the y-axis. I colored the bars by year, which shows the concentration of deaths by year given a specific death cause. 
+
+This is tremendously useful in seeing how certain causes of death are changing with time. With just a quick glance at the plot, it is clear that the majority of the death causes are increasing in number with time. However, intentional self-harm shows the oposite trend, suggesting that the amount of deaths caused by self-harm are decreasing with time.
