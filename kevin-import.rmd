@@ -1,18 +1,21 @@
 library(tidyverse)
 
-data	<-	read_csv("C:/Users/Kevin Chiu/Desktop/Data Vis/cs329e-project-4/NCHS_Leading_Causes_of_Death__United_States.csv",
-  col_types =	cols(
-    Year =	col_integer(),
-    113 Cause Name =	col_character(),
-    Cause Name =	col_character(),
-    State =	col_string(),
-    Deaths =	col_integer(),
-    Age-adjusted Death Rate = col_number()
-)) %>% dplyr::select(1:7) %>% dplyr::filter(State != 'United States' and Deaths != null)
+data	<- read_csv("C:/Users/Kevin/Desktop/CS329E/cs329e-project-4/NCHS_Leading_Causes_of_Death__United_States.csv",
+col_types =	list(
+    'Year' =	col_integer(),
+    '113 Cause Name' =	col_character(),
+    'Cause Name' =	col_character(),
+    'State' =	col_character(),
+    'Deaths' =	col_integer(),
+    'Age-adjusted Death Rate' = col_number()
+)) %>% dplyr::select(1:) %>% dplyr::filter('State' != 'United States') 
+# & 'Deaths' != null
 
 names(data)
 
 for(n in names(data)) {
   data[n] <- data.frame(lapply(data[n], gsub, pattern="[^ -~]", replacement= ""))
 }
-write_csv(data, "C:/Users/Kevin Chiu/Desktop/Data Vis/new_cause_of_death.csv")
+
+write_csv(data, "C:/Users/Kevin/Desktop/CS329E/cs329e-project-4/cs329e-project-4/new_cause_of_death.csv")
+'
