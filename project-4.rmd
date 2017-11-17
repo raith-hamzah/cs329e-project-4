@@ -34,6 +34,9 @@ sessionInfo()
 ## **Github Link** 
 https://github.com/raith-hamzah/cs329e-project-4
 
+## **Data.World link**
+https://data.world/jalex11/f-17-edv-project-4
+
 ## **Connecting to data.world** 
 ```{r}
 project <- "https://data.world/jalex11/f-17-edv-project-4"
@@ -43,8 +46,30 @@ death_educ <- data.world::query(
   dataset = project)
 ```
 
-## An Analysis of Relationship Between Rate of Education and Death Rate over Years
+## An Analysis of Changes in the Number of Death per State
 ```{r}
-renderPlot(death_educ %>% dplyr::select(b14001_001, state, deaths, year) %>% dplyr::mutate(death_rate = lead(deaths)-deaths) %>% dplyr::mutate(education_rate = lead(b14001_001)- b14001_001) %>% ggplot() + geom_line(mapping = aes(x=year,y=death_rate, color = state)) + geom_line(mapping = aes(x=year,y=education_rate, color = state)))
+states = death_educ %>% dplyr::distinct(state)
+
+inputPanel(
+  selectInput("select_states", label = "Select States for Comparison",
+              choices = states, multiple= TRUE, selected="Texas")
+)
+
+renderPlot(death_educ %>% dplyr::select(b14001_001, state, deaths, year, n_cause_name) %>% dplyr::filter(n_cause_name == "All Causes") %>% dplyr::filter(state == input$select_states) %>% dplyr::mutate(death_rate = lead(deaths, order_by = state)-deaths) %>% dplyr::mutate(education_rate = lead(b14001_001, order_by = state)- b14001_001) %>% ggplot() + geom_point(mapping = aes(x=year,y=death_rate, color = state)) + geom_line(mapping = aes(x=year,y=death_rate, color = state)) + labs(y = "Change in Deaths"))
+
+renderPlot(death_educ %>% dplyr::select(b14001_001, state, deaths, year, n_cause_name)%>%  dplyr::filter(state == input$select_states) %>% dplyr::filter(n_cause_name != "All Causes") %>% dplyr::mutate(death_rate = lead(deaths, order_by = state)-deaths) %>% ggplot() + geom_point(mapping = aes(x=year,y=death_rate, color = state)) + geom_line(mapping = aes(x=year,y=death_rate, color = state)) + facet_wrap(~n_cause_name)+ labs(y = "Change in Deaths"))
 
 ```
+The purpose of this graph was to compare the changes in the number deaths per year between states and what the cause of it was (when there is data). After a quick analysis of Texas and California, it seems that there was a spike of deaths due to car accidents that starts in 2013. This could warrant further investigation on why that occured. ADditionally, there was a spike in deaths due to diabetes mellitus that occurred first in Texas and later in California. A possible reason for this is the diffusion of food that put people at a greater risk of diabetes that spread from Texas to California (maybe from a restuarant or something). On a more positive sign, it seems that the number of deaths in Texas and California due to heart disease seems to be decreasing since the y-values never go above 0. As previously demonstrated, this graph could be very useful for forming hypotheses for reasons why there was an increase of deaths in a given year or could be used to just analyze differences between states. -Kevin 
+
+### Comparison of Total Number of People Enrolled in School and Deaths 2010 - 2015
+```{r}
+group_num <- c(1,2,3,4)
+
+inputPanel(
+  selectInput("select_group", label = "Select Which Quarter of States (Based Alphabetically)",
+              choices = group_num, multiple= TRUE, selected = 1)
+)
+renderPlot(death_educ %>% dplyr::select(b14001_001, state, deaths, n_cause_name, year) %>% dplyr::filter(n_cause_name == "All Causes") %>% dplyr::filter (year >=2010 & year <= 2015) %>% dplyr::mutate(rank = ntile(state,4)) %>% dplyr::filter(rank == input$select_group) %>% dplyr::group_by(state, b14001_001) %>%  dplyr::arrange(state) %>% dplyr::summarize(all_deaths = sum(deaths)) %>% ggplot() + geom_col(mapping = aes(x= state,y = b14001_001, fill = state), color = "black") + geom_col(mapping = aes(x= state,y = all_deaths, fill = state),color = "white") + theme(axis.text.x=element_text(angle=270, vjust =.6, hjust=0))+ theme(legend.position="none")+ labs(y = "Deaths (White)/ School Enrollment (Black)"))
+```
+Based on this graph, it is obvious to see that most states with higher populations have a higher amount of deaths and education enrollment. This conforms to my expectation of that. The purpose of this graph was to see if a higher amount of educated people could result in fewer deaths due to more people being more knowledgable at potential risks. From this graph, no conclusion could be made since the number of deaths per educated people seems to vary. What this graph is useful for though, is to compare the importance of education in each state since it is assumed that a higher emphasis on education by the state government should yield a higher enrollment count. -Kevin
