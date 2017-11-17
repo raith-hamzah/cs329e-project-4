@@ -1,4 +1,50 @@
-```{r}
+---
+title: "Can Education Fight Death: An Analysis of Deaths and Education"
+author: "Kevin Chiu"
+resource_files:
+- .Renviron
+
+output:
+  html_notebook:
+    code_folding: hide
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+runtime: shiny
+---
+Group 14:
+Jordan Alexander,
+Kevin Chiu,
+Adarsh Ramakrishnan,
+Raith Hamzah
+
+```{r setup, include=FALSE}
 library(tidyverse)
+require(data.world)
+library(shiny)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **R Session Info**  
+
+```{r}
+sessionInfo()
+```
+
+## **Github Link** 
+https://github.com/raith-hamzah/cs329e-project-4
+
+## **Connecting to data.world** 
+```{r}
+project <- "https://data.world/jalex11/f-17-edv-project-4"
+data.world::set_config(cfg_env("DW_API"))
+death_educ <- data.world::query(
+  data.world::qry_sql("select b14001_001, n.state, n_cause_name, year, deaths from new_cause_of_death n join usa_all_states u on n.state = u.areaname;"),
+  dataset = project)
+```
+
+## An Analysis of Relationship Between Rate of Education and Death Rate over Years
+```{r}
+renderPlot(death_educ %>% dplyr::select(b14001_001, state, deaths, year) %>% dplyr::mutate(death_rate = lead(deaths)-deaths) %>% dplyr::mutate(education_rate = lead(b14001_001)- b14001_001) %>% ggplot() + geom_line(mapping = aes(x=year,y=death_rate, color = state)) + geom_line(mapping = aes(x=year,y=education_rate, color = state)))
 
 ```
