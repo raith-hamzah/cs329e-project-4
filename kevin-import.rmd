@@ -1,15 +1,14 @@
 library(tidyverse)
 
 data	<- read_csv("C:/Users/Kevin/Desktop/CS329E/cs329e-project-4/NCHS_Leading_Causes_of_Death__United_States.csv",
-col_types =	list(
-    'Year' =	col_integer(),
-    '113 Cause Name' =	col_character(),
-    'Cause Name' =	col_character(),
-    'State' =	col_character(),
-    'Deaths' =	col_integer(),
-    'Age-adjusted Death Rate' = col_number()
-)) %>% dplyr::select(1:) %>% dplyr::filter('State' != 'United States') 
-# & 'Deaths' != null
+  col_types = cols(
+                   Year = col_integer(),
+                   N_Cause_Name = col_character(),
+                   Cause_Name = col_character(),
+                   State = col_character(),
+                   Deaths = col_integer(),
+                   Age_adjusted_Death_Rate = col_number())) %>% dplyr::select(1:6) %>% dplyr::filter(State != 'United States'& Deaths != "")
+
 
 names(data)
 
@@ -17,5 +16,7 @@ for(n in names(data)) {
   data[n] <- data.frame(lapply(data[n], gsub, pattern="[^ -~]", replacement= ""))
 }
 
-write_csv(data, "C:/Users/Kevin/Desktop/CS329E/cs329e-project-4/cs329e-project-4/new_cause_of_death.csv")
-'
+#Removes unecessary parentheses in N_Cause_Name column
+data["N_Cause_Name"] <- data.frame(lapply(data["N_Cause_Name"], gsub, pattern="\\(.*\\)", replacement= ""))
+
+write_csv(data, "C:/Users/Kevin/Desktop/CS329E/cs329e-project-4/new_cause_of_death.csv")
