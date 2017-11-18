@@ -1,0 +1,13 @@
+name: project-4
+title: project-4
+username:
+account: kyrucho
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 237024
+bundleId: 1082389
+url: https://kyrucho.shinyapps.io/project-4/
+when: 1510974827.52338
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: raw_cause_of_death.csv|processed_cause_of_death.csv

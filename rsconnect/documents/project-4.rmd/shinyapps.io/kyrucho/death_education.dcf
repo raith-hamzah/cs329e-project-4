@@ -1,0 +1,12 @@
+name: death_education
+title: Death_Education
+username:
+account: kyrucho
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 237032
+bundleId: 1082397
+url: https://kyrucho.shinyapps.io/death_education/
+when: 1510975044.94338
+asMultiple: FALSE
+asStatic: FALSE
