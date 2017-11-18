@@ -70,9 +70,7 @@ renderDataTable(
 # Step 3: Export
 write_csv(intermediary_data, "./processed_cause_of_death.csv")
 
-
-
-# Step 4: Load (data.world)
+# Step 4: 
 project <- "https://data.world/jalex11/f-17-edv-project-4"
 
 data.world::set_config(cfg_env("DW_API"))
@@ -86,7 +84,7 @@ death_educ <- data.world::query(
 ```
 ## Clean Dataset
 ```{r}
-# Step 5: Reformat
+# Step 5: Input and Step 6: Reformat
 cleaned_names <- c( "n_cause_name", "cause_name", "state", "age_adjusted_death_rate", "year", "deaths")
 gathered_data <- intermediary_data %>% gather(year, "deaths", 5:21)
 clean_data	<- gathered_data %>%
@@ -104,7 +102,7 @@ renderDataTable(
 ## Graphs (Communication)
 ### Deaths by Leading Cause, Colored by Year
 ```{r}
-# Step 6: Understand (Transform, Vizualize, Model)
+# Step 7: Understand (Transform, Vizualize, Model)
 # Contains the "percent_rank" mutation.
 
 renderPlot(
@@ -123,7 +121,7 @@ The data was grouped by cause of death and then a percent rank was created for t
 ### Leading Causes of Deaths
 
 ```{r}
-# Step 6: Understand (Transform, Vizualize, Model)
+# Step 7: Understand (Transform, Vizualize, Model)
 # Contains "cume_dist" mutation.
 
 renderPlot(
@@ -145,7 +143,7 @@ This is tremendously useful in seeing how certain causes of death are changing w
 
 ### Changes in the Number of Death per State
 ```{r}
-# Step 6: Undestand (Transform, Vizualize, Model)
+# Step 7: Undestand (Transform, Vizualize, Model)
 # Contains "lead" mutation
 
 states = death_educ %>% distinct(state)
@@ -181,7 +179,7 @@ The purpose of this graph was to compare the changes in the number deaths per ye
 
 ### Total People Enrolled in School and Deaths
 ```{r}
-# Step 6: Undestand (Transform, Vizualize, Model)
+# Step 7: Undestand (Transform, Vizualize, Model)
 # Contains 'ntile' mutation.
 
 group_num <- c(1,2,3,4)
