@@ -1,6 +1,8 @@
 ---
 title: "Project 4 (Group #14)"
 author: "Raith Hamzah, Adarsh Ramakrishnan, Jordan Alexander, Kevin Chiu"
+resource_files:
+  - .Renviron
 output:
   html_notebook:
     code_folding: hide
@@ -9,74 +11,196 @@ output:
     toc_float: true
 runtime: shiny
 ---
-# Project 4 (Group 14):
+```{r}
+sessionInfo()
+```
+
+## **Github Link** 
+https://github.com/raith-hamzah/cs329e-project-4
+
+## **Data.World link**
+https://data.world/jalex11/f-17-edv-project-4
+
 ```{r}
 # Load required libraries
-library(data.world)
 library(tidyverse)
-library(dplyr)
+library(data.world)
 library(shiny)
-library(ggplot2)
 
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Raw Data
+```{r}
 # Step 1: Input
-data	<- read_csv("./NCHS_Leading_Causes_of_Death__United_States.csv",
-# Step 2: Clean
-  col_types = cols(
-     Year = col_integer(),
-     N_Cause_Name = col_character(),
-     Cause_Name = col_character(),
-     State = col_character(),
-     Deaths = col_integer(),
-     Age_adjusted_Death_Rate = col_number())) %>% 
-  dplyr::select(1:6) %>% 
-  dplyr::filter(State != 'United States'& Deaths != "")
+intermediary_data <- read_csv("./raw_cause_of_death.csv",
+# Step 2:  Clean
+    col_types = cols(
+      `113 Cause Name` = col_character(),
+      `Cause Name` = col_character(),
+      State = col_character(),
+      `1999` = col_double(),
+      `2000` = col_double(),
+      `2001` = col_double(),
+      `2002` = col_double(),
+      `2003` = col_double(),
+      `2004` = col_double(),
+      `2005` = col_double(),
+      `2006` = col_double(),
+      `2007` = col_double(),
+      `2007` = col_double(),
+      `2008` = col_double(),
+      `2009` = col_double(),
+      `2010` = col_double(),
+      `2011` = col_double(),
+      `2012` = col_double(),
+      `2013` = col_double(),
+      `2014` = col_double(),
+      `2015` = col_double()
+    )
+) 
 
-names(data)
-
-for(n in names(data)) {
-  data[n] <- data.frame(lapply(data[n], gsub, pattern="[^ -~]", replacement= ""))
+for(n in names(intermediary_data)) {
+  intermediary_data[n] <- data.frame(lapply(intermediary_data[n], gsub, pattern="[^ -~]", replacement= ""))
 }
 
+renderDataTable(
+  intermediary_data
+)
+
 # Step 3: Export
-write_csv(data, "./new_cause_of_death.csv")
+write_csv(intermediary_data, "./processed_cause_of_death.csv")
+
+
 
 # Step 4: Load (data.world)
 project <- "https://data.world/jalex11/f-17-edv-project-4"
-data.world::set_config(cfg_env("DW_API"))
-death_educ <- data.world::query(
-  data.world::qry_sql("select b14001_001, n.state, n_cause_name, year, deaths from new_cause_of_death n join usa_all_states u on n.state = u.areaname;"),
-  dataset = project)
 
+data.world::set_config(cfg_env("DW_API"))
+
+death_educ <- data.world::query(
+  data.world::qry_sql(
+    "select b14001_001, n.state, n_cause_name, year, deaths from new_cause_of_death n join usa_all_states u on n.state = u.areaname;"
+  ), 
+  dataset = project
+)
+```
+## Clean Dataset
+```{r}
+# Step 5: Reformat
+cleaned_names <- c( "n_cause_name", "cause_name", "state", "age_adjusted_death_rate", "year", "deaths")
+gathered_data <- intermediary_data %>% gather(year, "deaths", 5:21)
+clean_data	<- gathered_data %>%
+  `colnames<-`(cleaned_names) %>%
+  select(year, state, n_cause_name, deaths, age_adjusted_death_rate ) %>% 
+  arrange(year, state, n_cause_name) %>%
+  filter(state != 'United States'& deaths != "")
+
+renderDataTable(
+  clean_data
+)
 
 ```
 
-## Adarsh's Graph
+## Graphs (Communication)
+### Deaths by Leading Cause, Colored by Year
 ```{r}
 # Step 6: Understand (Transform, Vizualize, Model)
+# Contains the "percent_rank" mutation.
 
-death_educ %>% dplyr::group_by(n_cause_name) %>%
-  dplyr::summarise(deaths=mean(deaths)) %>%
-  dplyr::mutate(rank_deaths= percent_rank(deaths)) %>%
-  dplyr::filter(rank_deaths>=0.6 & n_cause_name!= "All Causes") %>%
-  ggplot(mapping=aes(x=n_cause_name,y=deaths))+geom_bar(stat="identity")
+renderPlot(
+  death_educ %>% group_by(n_cause_name) %>%
+  summarise(deaths=mean(deaths)) %>%
+  mutate(rank_deaths= percent_rank(deaths)) %>%
+  filter(rank_deaths>=0.6 & n_cause_name!= "All Causes") %>%
+  ggplot() + geom_bar(mapping = aes(x = n_cause_name, y = deaths), stat="identity")
+)
+
 
 ```
 
 The data was grouped by cause of death and then a percent rank was created for the deaths in each cause. This allowed me to filter out the top 40 percent of the deaths. The reason for this is to remove any causes of death that do no have a significant enough contribution (that is they don't have enough deaths to be of significance in the study). It can be seen that heart diseases are the most common causes of deaths followed by malignant neoplasms. This makes sense because of how common heart diseases are in the population and how severe a malignant neoplasm can be to the body when present/ One interesting thing was how low accidents are as a cause of death compared to heart diseases and even compared to cerebrovascular diseases. This could be due to an increase in safety and regulations in the roads and a reduction in drunk driving as well.
 
-## Jordan's Graph
+### Leading Causes of Deaths
 
 ```{r}
 # Step 6: Understand (Transform, Vizualize, Model)
+# Contains "cume_dist" mutation.
 
-x <- death_educ %>% dplyr::select(state, n_cause_name, year, deaths) %>%
-  dplyr::mutate(cd_deaths= cume_dist(deaths)) %>%
-  dplyr::filter(cd_deaths >= 0.6 & n_cause_name != "All Causes")
-  
-x %>% ggplot(mapping = aes(x = n_cause_name, y = cd_deaths, color = year)) + geom_bar(stat = "identity") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+renderPlot(
+  death_educ %>% select(state, n_cause_name, year, deaths) %>%
+  mutate(cd_deaths= cume_dist(deaths)) %>%
+  filter(cd_deaths >= 0.6 & n_cause_name != "All Causes") %>% 
+  ggplot() + geom_bar(
+    mapping = aes(x = n_cause_name, y = cd_deaths, color = year), 
+    stat = "identity"
+  ) + theme(axis.text.x=element_text(angle = 90, hjust= 1,vjust = 0.5))
+)
 
 ```
 
 Here I selected the columns state, n_cause_name, year and deaths from the data frame death_educ. I then made a new column in the data frame called "cd_deaths". I used the cume_dist() function on the column "death" to compute this column. The cume_dist() of "death" is the number of rows with values lower than or equal to the value of "death", divided by the number of rows evaluated in the particular query result. I then filtered the row by the values greater than or equal to 0.6 because minimum of the column was .6 I also filtered n_cause_name to not include "All Causes" as it is redudant and would alter the results. I then began my visualization by making a barchart with n_cause_names being the bars, and cd_deaths on the y-axis. I colored the bars by year, which shows the concentration of deaths by year given a specific death cause. 
 
 This is tremendously useful in seeing how certain causes of death are changing with time. With just a quick glance at the plot, it is clear that the majority of the death causes are increasing in number with time. However, intentional self-harm shows the oposite trend, suggesting that the amount of deaths caused by self-harm are decreasing with time.
+
+
+### Changes in the Number of Death per State
+```{r}
+# Step 6: Undestand (Transform, Vizualize, Model)
+# Contains "lead" mutation
+
+states = death_educ %>% distinct(state)
+
+inputPanel(
+  selectInput("select_states", label = "Select States for Comparison",
+              choices = states, multiple= TRUE, selected="Texas")
+)
+
+renderPlot(
+  death_educ %>% select(b14001_001, state, deaths, year, n_cause_name) %>% 
+  filter(n_cause_name == "All Causes") %>% 
+  filter(state == input$select_states) %>% 
+  mutate(death_rate = lead(deaths, order_by = state)-deaths) %>% 
+  mutate(education_rate = lead(b14001_001, order_by = state)- b14001_001) %>% 
+  ggplot() + geom_point(mapping = aes(x=year,y=death_rate, color = state)) + 
+  geom_line(mapping = aes(x=year,y=death_rate, color = state)) + 
+  labs(y = "Change in Deaths")
+)
+
+renderPlot(
+  death_educ %>% select(b14001_001, state, deaths, year, n_cause_name) %>%  
+  filter(state == input$select_states) %>% 
+  filter(n_cause_name != "All Causes") %>% 
+  mutate(death_rate = lead(deaths, order_by = state)-deaths) %>% 
+  ggplot() + geom_point(mapping = aes(x=year,y=death_rate, color = state)) + 
+  geom_line(mapping = aes(x=year,y=death_rate, color = state)) + 
+  facet_wrap(~n_cause_name)+ labs(y = "Change in Deaths")
+)
+
+```
+The purpose of this graph was to compare the changes in the number deaths per year between states and what the cause of it was (when there is data). I used the lag() function to calculate the change is deaths per year. To compare different states without cluttering up the graph, I used an input panel so that th euser can decide which states to compare. There is also a second set of graphs below the primary one that breaks down the cause of deaths. After a quick analysis of Texas and California, it seems that there was a spike of deaths due to car accidents that starts in 2013. This could warrant further investigation on why that occured. ADditionally, there was a spike in deaths due to diabetes mellitus that occurred first in Texas and later in California. A possible reason for this is the diffusion of food that put people at a greater risk of diabetes that spread from Texas to California (maybe from a restuarant or something). On a more positive sign, it seems that the number of deaths in Texas and California due to heart disease seems to be decreasing since the y-values never go above 0. There could be more analyses that can be done between states, but I just wanted to give a sample of how this visualization could be used. As previously demonstrated, this graph could be very useful for forming hypotheses for reasons why there was an increase of deaths in a given year or could be used to just analyze differences between states. 
+
+### Total People Enrolled in School and Deaths
+```{r}
+# Step 6: Undestand (Transform, Vizualize, Model)
+# Contains 'ntile' mutation.
+
+group_num <- c(1,2,3,4)
+inputPanel(
+  selectInput("select_group", label = "Select Which Quarter of States (Based Alphabetically)",
+              choices = group_num, multiple= TRUE, selected = 1)
+)
+renderPlot(
+  death_educ %>% select(b14001_001, state, deaths, n_cause_name, year)%>% 
+    filter(n_cause_name == "All Causes") %>% 
+    filter (year >=2010 & year <= 2015) %>%
+    mutate(rank = ntile(state, 4)) %>% 
+    filter(rank == input$select_group) %>% 
+    group_by(state, b14001_001) %>%  
+    arrange(state) %>% 
+    summarize(all_deaths = sum(deaths)) %>% 
+    ggplot() + geom_col(mapping = aes(x = state,y = b14001_001, fill = state), color = "black") + 
+    geom_col(mapping = aes(x= state,y = all_deaths, fill = state),color = "white") + 
+    theme(axis.text.x = element_text(angle = 270, vjust = .6, hjust = 0)) + 
+    theme(legend.position = "none")+ labs(y = "Deaths (White)/ School Enrollment (Black)"))
+```
+In this graph, I used the ntile() function to split the number of states into 4 groups as evenly as possible and the input panel to select which of these groups to display. This was done in order to not clutter the graph for analysis. Based on this graph, it is obvious to see that most states with higher populations have a higher amount of deaths and education enrollment. This conforms to my expectation of that. The purpose of this graph was to see if a higher amount of educated people could result in fewer deaths due to more people being more knowledgable at potential risks. From this graph, no conclusion could be made since the number of deaths per educated people seems to vary. What this graph is useful for though, is to compare the importance of education in each state since it is assumed that a higher emphasis on education by the state government should yield a higher enrollment count.
